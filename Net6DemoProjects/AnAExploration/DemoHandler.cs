@@ -1,7 +1,7 @@
 ﻿
 public class DemoHandler : DelegatingHandler
 {
-    const string IntrospectResponse = "{\"active\": true,\"scope\": \"read write\",\"client_id\":\"client_id_for_introspection_endpoint\",\"username\":\"chandler bing\",\"exp\":1671799899}";
+    const string IntrospectResponse = "{\"active\": true,\"scope\": \"read write\",\"permissions\": \"Search Create\",\"client_id\":\"client_id_for_introspection_endpoint\",\"username\":\"chandler bing\",\"exp\":1671799899}";
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
