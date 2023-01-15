@@ -1,0 +1,20 @@
+﻿# https://stackoverflow.com/questions/61653284/does-kubernetes-take-json-format-as-input-file-to-create-configmap-and-secret
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kuberefreshdemo
+data:
+  appsettings.k8s.json: |-
+    {
+      "Logging": {
+        "LogLevel": {
+          "Default": "Error",
+          "System": "Error",
+          "Microsoft": "Error"
+        }
+      },
+      "AppConfiguration": {
+        "DatabaseHost": "demo",
+        "ThirdPartyAPIBaseURL" :  "bing"
+      }
+    }

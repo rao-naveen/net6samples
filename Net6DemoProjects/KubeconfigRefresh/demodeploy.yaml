@@ -1,0 +1,33 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kuberefreshdemo
+  namespace: default
+  labels:
+    k8s-app: kuberefreshdemo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      k8s-app: kuberefreshdemo
+  template:
+    metadata:
+      name: kuberefreshdemo
+      labels:
+        k8s-app: kuberefreshdemo
+    spec:
+      volumes:
+        - name: kuberefreshdemo-volume
+          configMap:
+            name: kuberefreshdemo
+      containers:
+        - name: kuberefreshdemo
+          image: msdemo/kuberefresh:1.0
+          env:
+             - name: DOTNET_USE_POLLING_FILE_WATCHER
+               value: "true"
+          volumeMounts:
+            - name: kuberefreshdemo-volume
+              mountPath: /app/appsettings.k8s.json
+              subPath: appsettings.k8s.json
+          imagePullPolicy: IfNotPresent

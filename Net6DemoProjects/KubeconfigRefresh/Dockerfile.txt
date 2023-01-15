@@ -1,0 +1,4 @@
+﻿FROM mcr.microsoft.com/dotnet/aspnet:6.0.13-alpine3.17-amd64
+WORKDIR /app
+COPY out /app/.
+ENTRYPOINT ["dotnet", "KubeconfigRefresh.dll"]

@@ -25,7 +25,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AnAExploration", "AnAExplor
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp", "ConsoleApp\ConsoleApp.csproj", "{EBB503DC-4F44-44F9-8A36-F4E4A34B40A9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AwsStsTest", "AwsStsTest\AwsStsTest.csproj", "{164BED31-CACF-4706-AEFF-416A48C51D74}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AwsStsTest", "AwsStsTest\AwsStsTest.csproj", "{164BED31-CACF-4706-AEFF-416A48C51D74}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KubeconfigRefresh", "KubeconfigRefresh\KubeconfigRefresh.csproj", "{271214B7-CA2C-496F-88A9-D46CA90A18F5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -81,6 +83,10 @@ Global
 		{164BED31-CACF-4706-AEFF-416A48C51D74}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{164BED31-CACF-4706-AEFF-416A48C51D74}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{164BED31-CACF-4706-AEFF-416A48C51D74}.Release|Any CPU.Build.0 = Release|Any CPU
+		{271214B7-CA2C-496F-88A9-D46CA90A18F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{271214B7-CA2C-496F-88A9-D46CA90A18F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{271214B7-CA2C-496F-88A9-D46CA90A18F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{271214B7-CA2C-496F-88A9-D46CA90A18F5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
