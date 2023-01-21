@@ -13,11 +13,14 @@ namespace UsingConfigurationOption.Controllers
     };
 
         private readonly ILogger<WeatherForecastController> _logger;
-        private readonly IOptions<ApplicationInfo> appInfo;
+        private readonly IConfiguration configuration;
+        private readonly IOptionsMonitor<ApplicationInfo> appInfo;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger,IOptions<ApplicationInfo> appInfo)
+        public WeatherForecastController(ILogger<WeatherForecastController> logger,IConfiguration configuration,
+            IOptionsMonitor<ApplicationInfo> appInfo)
         {
             _logger = logger;
+            this.configuration = configuration;
             this.appInfo = appInfo;
         }
 
@@ -28,9 +31,26 @@ namespace UsingConfigurationOption.Controllers
             {
                 Date = DateTime.Now.AddDays(index),
                 TemperatureC = Random.Shared.Next(-20, 55),
-                Summary = Summaries[Random.Shared.Next(Summaries.Length)]
+                Summary = Summaries[Random.Shared.Next(Summaries.Length)] + $"Application Name {appInfo.CurrentValue}"
             })
             .ToArray();
         }
+
+        // reloading the configuration
+        // https://mbarkt3sto.hashnode.dev/understanding-ioptionsmonitort-in-aspnet-core
+        [HttpPost]
+        [Route("update")]
+        public IActionResult Update()
+        {
+            configuration["applicationInfo:id"] = "xyz124 " + DateTime.Now.ToString();
+            if (configuration is IConfigurationRoot configurationRoot)
+            {
+                configurationRoot.Reload();
+            }
+            
+            
+            return Ok();
+        }
+
     }
 }
