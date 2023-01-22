@@ -1,6 +1,7 @@
 using UsingConfigurationOption;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddKeyPerFile("/config",true);
 
 // Add services to the container.
 
