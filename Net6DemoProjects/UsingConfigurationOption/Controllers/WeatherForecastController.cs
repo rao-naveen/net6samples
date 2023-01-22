@@ -35,6 +35,32 @@ namespace UsingConfigurationOption.Controllers
             })
             .ToArray();
         }
+        /// <summary>
+        /// Count = 11
+        //{[LogginCount = 11
+        //{[Logging:LogLevel:Default, Information]}
+        //{[Logging:LogLevel:Microsoft.AspNetCore, Warning]}
+        //{[AllowedHosts, *]}
+        //{[applicationInfo:name, ConfigurationDemo]}
+        //{[applicationInfo:id, 345343434]}
+        //{[remoteNodes:0:id, uniqueid1]}
+        //{[remoteNodes:0:name, machinea]}
+        //{[remoteNodes:1:id, uniqueid2]}
+        //{[remoteNodes:1:name, machinebb]}
+        //{[remoteNodes:2:id, uniqueid3]}
+        //{[remoteNodes:2:name, machinebc]}
+    /// </summary>
+    /// <returns></returns>
+[HttpGet]
+        [Route("config")]
+        public IActionResult config()
+        {
+            if (configuration is IConfigurationRoot configurationRoot)
+            {
+                return Ok(configurationRoot.GetDebugView());
+            }
+            return Ok("");
+        }
 
         // reloading the configuration
         // https://mbarkt3sto.hashnode.dev/understanding-ioptionsmonitort-in-aspnet-core
