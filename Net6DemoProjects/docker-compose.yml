@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  kubeconfigrefresh:
+    image: ${DOCKER_REGISTRY-}kubeconfigrefresh
+    build:
+      context: .
+      dockerfile: KubeconfigRefresh/Dockerfile
