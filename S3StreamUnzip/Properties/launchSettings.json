@@ -2,7 +2,7 @@
   "profiles": {
     "S3StreamUnzip": {
       "commandName": "Project",
-      "commandLineArgs": "demo \"NoSQL Workbench-win-3.3.0.zip\" unzip1  http://192.168.1.11:9000"
+      "commandLineArgs": "demo \"ZoomIt.zip\" unzip2  http://192.168.1.11:9000"
     }
   }
 }
