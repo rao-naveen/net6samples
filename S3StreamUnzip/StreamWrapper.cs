@@ -8,13 +8,13 @@ using System.Threading.Tasks;
 namespace S3StreamUnzip
 {
 
-    public class StreamWrapper2 : Stream
+    public class StreamWrapper : Stream
     {
         private readonly Stream stream;
         private readonly long length;
         private long position;
 
-        public StreamWrapper2(Stream stream, long length) 
+        public StreamWrapper(Stream stream, long length) 
         {
             this.stream = stream;
             this.length = length;

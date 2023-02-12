@@ -30,7 +30,7 @@ AmazonS3Client s3Client = new AmazonS3Client(acceskey, accessecret, config);
 S3UnzipManager unzipManager = new S3UnzipManager(s3Client);
 try
 {
-    unzipManager.Unzip2(bucketName, inputzip, outputPrefix);
+    unzipManager.UnzipUsingCSharpziplib(bucketName, inputzip, outputPrefix);
 }
 catch (Exception exp)
 {
