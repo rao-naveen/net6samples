@@ -3,8 +3,11 @@
 using Amazon.S3;
 using S3StreamUnzip;
 using System.Diagnostics;
+using System.Runtime;
 
 var memInfo = GC.GetGCMemoryInfo();
+var gcType = GCSettings.IsServerGC ? "Server GC" : "Workstation GC";
+Console.WriteLine($"GC type {gcType}");
 Console.WriteLine($"TotalAvailableMemory - {Bytes.GetReadableSize(memInfo.TotalAvailableMemoryBytes)},TotalCommitted - { Bytes.GetReadableSize(memInfo.TotalCommittedBytes)} ");
 
 if (args.Length < 4)

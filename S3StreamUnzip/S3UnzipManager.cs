@@ -7,6 +7,7 @@ using ICSharpCode.SharpZipLib.Zip;
 using Microsoft.AspNetCore.WebUtilities;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
@@ -54,6 +55,8 @@ namespace S3StreamUnzip
             using GetObjectResponse response = amazonS3.GetObjectAsync(request).GetAwaiter().GetResult();
             //using (ZipInputStream s = new ZipInputStream()
             using Stream responseStream = response.ResponseStream;
+
+            var stopWatch = Stopwatch.StartNew();
             // Create ZipArchive from the inputStream of S3 Object
             using ZipInputStream zipInputStream = new ZipInputStream(responseStream);
             ZipEntry theEntry;
@@ -67,9 +70,23 @@ namespace S3StreamUnzip
                     Directory.CreateDirectory(Path.Combine(@"C:\dev\temp\fors3demo",theEntry.Name));
                     continue;
                 }
+                Stream stream = Stream.Null;
+
+                
                 FileBufferingReadStream fileBufferingReadStream = new FileBufferingReadStream(zipInputStream, MaxMemoryThreshodinBytes, null, TempFileDir);
                 fileBufferingReadStream.DrainAsync(CancellationToken.None).GetAwaiter().GetResult();
                 fileBufferingReadStream.Seek(0, SeekOrigin.Begin);
+                stream = fileBufferingReadStream;
+                // for debug
+                if (!string.IsNullOrEmpty(fileBufferingReadStream.TempFileName))
+                {
+                    var backup = Console.ForegroundColor;
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine($"[Debug]Temp file is created for {theEntry.Name} -> {fileBufferingReadStream.TempFileName} : {Bytes.GetReadableSize(theEntry.Size)}");
+                    Console.ForegroundColor = backup;
+                }
+                
+
                 // for debug
                 //using (fileBufferingReadStream)
                 //{
@@ -77,12 +94,15 @@ namespace S3StreamUnzip
                 //    fileBufferingReadStream.CopyTo(file);
                 //}
 
-                using (fileBufferingReadStream)
+                using (stream)
                 {
                     string outputObjectKey = $"{outputprefix}/{theEntry.Name}";
-                    TransferUtility transferUtility = UploadStreamToS3(bucketName, theEntry.Name, theEntry.Size, outputObjectKey, fileBufferingReadStream);
+                    TransferUtility transferUtility = UploadStreamToS3(bucketName, theEntry.Name, theEntry.Size, outputObjectKey, stream);
                 }
+
             }
+            stopWatch.Stop();
+            Console.WriteLine($"Unzip & Upload Completed in {stopWatch.Elapsed.ToString()}");
         }
         /// <summary>
         ///  using Windows Builtin Zip Archive which loads everything to memory
@@ -121,12 +141,12 @@ namespace S3StreamUnzip
             }
         }
 
-        private TransferUtility UploadStreamToS3(string bucketName, String fileName,long size, string outputObjectKey, FileBufferingReadStream fileBufferingReadStream)
+        private TransferUtility UploadStreamToS3(string bucketName, String fileName,long size, string outputObjectKey, Stream stream)
         {
             TransferUtility transferUtility = new TransferUtility(amazonS3);
             TransferUtilityUploadRequest transferUtilityUploadRequest = new TransferUtilityUploadRequest();
             transferUtilityUploadRequest.BucketName = bucketName;
-            transferUtilityUploadRequest.InputStream = fileBufferingReadStream;
+            transferUtilityUploadRequest.InputStream = stream;
             transferUtilityUploadRequest.Key = outputObjectKey;
             try
             {
@@ -134,7 +154,7 @@ namespace S3StreamUnzip
             }
             catch (Exception exp)
             {
-                Console.WriteLine($"Zip Entry upload failed {fileName}");
+                Console.WriteLine($"Zip Entry upload failed {fileName}, Exception {exp}");
             }
             Console.WriteLine($"Zip Entry upload successfully {fileName}; Size {Bytes.GetReadableSize(size)}");
             return transferUtility;
