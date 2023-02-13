@@ -1,10 +1,13 @@
-﻿using Amazon.S3;
+using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using ICSharpCode.SharpZipLib.Zip;
 using Microsoft.AspNetCore.WebUtilities;
 using SharpCompress.Readers;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using Amazon.Runtime.Internal.Util;
+using Microsoft.Extensions.Logging;
 
 namespace S3StreamUnzip
 {
@@ -24,130 +27,116 @@ namespace S3StreamUnzip
         static readonly int MB = 1024 * 1024;
         static readonly int MaxMemoryThreshodinBytes = 50 * MB;
         private readonly IAmazonS3 amazonS3;
-        
+        private readonly Microsoft.Extensions.Logging.ILogger _logger;
 
-        public S3UnzipManager(IAmazonS3 amazonS3)
+
+        public S3UnzipManager(IAmazonS3 amazonS3, Microsoft.Extensions.Logging.ILogger logger)
         {
             this.amazonS3 = amazonS3;
+            _logger = logger;
         }
         /// <summary>
-        /// using CSharpZipLib
+        /// Unzips the zipped object stored in s3 bucket.
+        /// Uses CSharpZipLib library for unzip , preserving the directory structure
+        /// Make sure input directory & file name inside zip file follows Object key naming guidelines.
+        /// <see cref="https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-keys.html"/>
         /// </summary>
-        /// <param name="bucketName"></param>
-        /// <param name="inputObjectKey"></param>
-        /// <param name="outputprefix"></param>
-        public void UnzipUsingCSharpziplib(string bucketName, string inputObjectKey, string outputprefix)
+        /// <param name="inputBucketName">input bucket where from zip file is read</param>
+        /// <param name="inputObjectKey"> s3 object key of the zip file inside input bucket</param>
+        /// <param name="outputBucketName">output bucker where unzipped objects are stored</param>
+        /// <param name="outputprefix">[optional]prefix to be used while constructing the output object key</param>
+        /// <returns>Returns the list of objects key's in the outputbucker where unzipped files are stored.</returns>
+        public async Task<List<string>> UnzipUsingCSharpziplib(string inputBucketName, string inputObjectKey, string outputBucketName, string? outputprefix)
         {
-            
-             // Get Zip Object from S3
+
+            List<string> uploadedEntries = new List<string>();
+
+            //1. Get Zip Object from S3
             GetObjectRequest request = new GetObjectRequest
             {
-                BucketName = bucketName,
+                BucketName = inputBucketName,
                 Key = inputObjectKey
             };
-            using GetObjectResponse response = amazonS3.GetObjectAsync(request).GetAwaiter().GetResult();
+            using GetObjectResponse response = await amazonS3.GetObjectAsync(request);
             using Stream responseStream = response.ResponseStream;
 
             var stopWatch = Stopwatch.StartNew();
-            // Create ZipInputStream from the inputStream of S3 Object
+
+            //2. Create ZipInputStream from the inputStream of S3 Object
             using ZipInputStream zipInputStream = new ZipInputStream(responseStream);
             ZipEntry theEntry;
-            // for each enty in Zip
+
+
+            //3. For each enty in Zip
             while ((theEntry = zipInputStream.GetNextEntry()) != null)
             {
-                Console.WriteLine($"Unzip file {theEntry.Name} of compression method {theEntry.CompressionMethod}");
+                _logger.LogDebug("Unzipping file {Name} of compression method {CompressionMethod}", theEntry.Name, theEntry.CompressionMethod);
+
                 if (theEntry.IsDirectory)
                 {
-                    // ignore directory entry
+                    // every zip entry name already contains full path hene ignore this for s3 upload
                     continue;
                 }
+
+                string s3ObjectKey = CreateObjectFlags(outputprefix, theEntry.Name);
                 Stream stream = Stream.Null;
 
-                
+
                 FileBufferingReadStream fileBufferingReadStream = new FileBufferingReadStream(zipInputStream, MaxMemoryThreshodinBytes, null, TempFileDir);
-                fileBufferingReadStream.DrainAsync(CancellationToken.None).GetAwaiter().GetResult();
+                await fileBufferingReadStream.DrainAsync(CancellationToken.None);
                 fileBufferingReadStream.Seek(0, SeekOrigin.Begin);
                 stream = fileBufferingReadStream;
+
                 // for debug print if it is file backed
                 if (!string.IsNullOrEmpty(fileBufferingReadStream.TempFileName))
                 {
-                    var backup = Console.ForegroundColor;
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.WriteLine($"[Debug]Temp file is created for {theEntry.Name} -> {fileBufferingReadStream.TempFileName} : {Bytes.GetReadableSize(theEntry.Size)}");
-                    Console.ForegroundColor = backup;
+                    _logger.LogDebug("Temp file is created for {theEntry.Name} -> {fileBufferingReadStream.TempFileName} : {size}", theEntry.Name, fileBufferingReadStream.TempFileName, Bytes.GetReadableSize(theEntry.Size));
                 }
 
-                using (stream)
+                await using (stream)
                 {
-                    string outputObjectKey = $"{outputprefix}/{theEntry.Name}";
-                    UploadStreamToS3(bucketName, theEntry.Name, theEntry.Size, outputObjectKey, stream);
+                    try
+                    {
+                        await UploadStreamToS3(outputBucketName, s3ObjectKey, stream);
+                        uploadedEntries.Add(s3ObjectKey);
+                        _logger.LogInformation("Zip Entry upload successfully {s3ObjectKey}; Size {size}", s3ObjectKey, Bytes.GetReadableSize(theEntry.Size));
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError(e, "Zip Entry upload failed. {s3ObjectKey}; Size {size}", s3ObjectKey, Bytes.GetReadableSize(theEntry.Size));
+                        throw;
+                    }
+
                 }
 
             }
             stopWatch.Stop();
-            Console.WriteLine($"Unzip & Upload Completed in {stopWatch.Elapsed.ToString()}");
+            _logger.LogInformation("Unzip & Upload Completed in  {time}", stopWatch.Elapsed.ToString());
+            return uploadedEntries;
         }
-        
         /// <summary>
-        /// using SharpCompress API 
+        /// creates s3 object key by combining input prefix & entry name( is full path)
+        /// Note that , it does not validate the S3 object key , it is zip creator responsibility to
+        /// Make sure input directory & file name inside zip file follows Object key naming guidelines.
+        /// <see cref="https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-keys.html"/
         /// </summary>
-        /// <param name="bucketName"></param>
-        /// <param name="inputObjectKey"></param>
         /// <param name="outputprefix"></param>
-        public void UnzipUsingSharpCompress(string bucketName, string inputObjectKey, string outputprefix)
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        private string CreateObjectFlags(string outputprefix, string fileName)
         {
-
-            // Get Zip Object from S3
-            GetObjectRequest request = new GetObjectRequest
+            string objectKey = string.Empty;
+            if (!string.IsNullOrEmpty(outputprefix))
             {
-                BucketName = bucketName,
-                Key = inputObjectKey
-            };
-            using GetObjectResponse response = amazonS3.GetObjectAsync(request).GetAwaiter().GetResult();
-            using Stream responseStream = response.ResponseStream;
-            var stopWatch = Stopwatch.StartNew();
-
-            using (var reader = ReaderFactory.Open(responseStream))
-            {
-                while (reader.MoveToNextEntry())
-                {
-                    if (reader.Entry.IsDirectory)
-                    {
-                        continue;
-                    }
-
-                    using var entryStream = reader.OpenEntryStream();
-                    
-                    Console.WriteLine($"Unzip file {reader.Entry.Key} of compression method {reader.Entry.CompressionType}");
-
-                    Stream stream = Stream.Null;
-
-
-                    FileBufferingReadStream fileBufferingReadStream = new FileBufferingReadStream(entryStream, MaxMemoryThreshodinBytes, null, TempFileDir);
-                    fileBufferingReadStream.DrainAsync(CancellationToken.None).GetAwaiter().GetResult();
-                    fileBufferingReadStream.Seek(0, SeekOrigin.Begin);
-                    stream = fileBufferingReadStream;
-
-                    // for debug print if it is file backed
-                    if (!string.IsNullOrEmpty(fileBufferingReadStream.TempFileName))
-                    {
-                        var backup = Console.ForegroundColor;
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.WriteLine($"[Debug]Temp file is created for {reader.Entry.Key} -> {fileBufferingReadStream.TempFileName} : {Bytes.GetReadableSize(reader.Entry.Size)}");
-                        Console.ForegroundColor = backup;
-                    }
-
-                    using (stream)
-                    {
-                        string outputObjectKey = $"{outputprefix}/{reader.Entry.Key}";
-                        UploadStreamToS3(bucketName, reader.Entry.Key, reader.Entry.Size, outputObjectKey, stream);
-                    }
-                }
+                objectKey = $"{outputprefix}/";
             }
 
-            stopWatch.Stop();
-            Console.WriteLine($"Unzip & Upload Completed in {stopWatch.Elapsed.ToString()}");
+            objectKey += fileName;
+
+            return objectKey;
         }
+
+
         /// <summary>
         /// uploads given stream to S3 using TransferUtility
         /// </summary>
@@ -157,23 +146,16 @@ namespace S3StreamUnzip
         /// <param name="outputObjectKey"></param>
         /// <param name="stream"></param>
         /// <returns></returns>
-        private void UploadStreamToS3(string bucketName, String fileName,long size, string outputObjectKey, Stream stream)
+        private Task UploadStreamToS3(string outputBucketName, string outputObjectKey, Stream stream)
         {
             using TransferUtility transferUtility = new TransferUtility(amazonS3);
-            TransferUtilityUploadRequest transferUtilityUploadRequest = new TransferUtilityUploadRequest();
-            transferUtilityUploadRequest.BucketName = bucketName;
-            transferUtilityUploadRequest.InputStream = stream;
-            transferUtilityUploadRequest.Key = outputObjectKey;
-            try
+            TransferUtilityUploadRequest transferUtilityUploadRequest = new TransferUtilityUploadRequest
             {
-                transferUtility.Upload(transferUtilityUploadRequest);
-            }
-            catch (Exception exp)
-            {
-                Console.WriteLine($"Zip Entry upload failed {fileName}, Exception {exp}");
-            }
-            Console.WriteLine($"Zip Entry upload successfully {fileName}; Size {Bytes.GetReadableSize(size)}");
-            return;
+                BucketName = outputBucketName,
+                InputStream = stream,
+                Key = outputObjectKey
+            };
+            return transferUtility.UploadAsync(transferUtilityUploadRequest);
         }
 
         private static string TempFileDir()
