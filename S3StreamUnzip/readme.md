@@ -5,7 +5,7 @@ It uses CSharpziplib zipinputstream to extract the zip entry iteratively.
 For **each zip entry** , if the **size > 50 MB ** and temorary file will be created else , it will be loaded in memory.
 It uses AWS TransferUtility to upload the extracted zip file on disk or in memory 
 
-> **_NOTE:_**  If process is running in a memory constrained envionment , use workstation gc configuration 
+> **_NOTE:_**  If process is running in a memory constrained envionment consider useing workstation gc configuration 
 > More details of [GC types](https://learn.microsoft.com/en-us/dotnet/standard/garbage-collection/workstation-server-gc) 
 > Configure [GC types](https://learn.microsoft.com/en-us/dotnet/core/runtime-config/garbage-collector#workstation-vs-server) 
 
@@ -62,6 +62,6 @@ catch (Exception exp)
 
 }
 ```
-> **_NOTE:_**  un zipped file in output bucket follows the folder structure as in zip file, need to make sure that path structure & name follows 
-> [S3 Object naming guidlines ](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-keys.html)
+> **_NOTE:_**  un zipped file in output bucket follows the folder structure as in zip file, need to make sure that path structure & name follows   
+>  [S3 Object naming guidlines ](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-keys.html)
 
