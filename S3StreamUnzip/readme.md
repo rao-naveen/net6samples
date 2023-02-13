@@ -17,6 +17,7 @@ It uses AWS TransferUtility to upload the extracted zip file on disk or in memor
 5.	If processing of any zip entry fails whole operation is stopped.
 
 
+
 ## Sample usage.
 ```shell
 dotnet S3StreamUnzip.dll <<inputbucket>>  <<input_zip_object_key>> <<outputbucket>> <<out_put_dir_prefix>> [<<s3_service_url>>]
@@ -32,11 +33,13 @@ Sample usage with **AWS S3**. Will use **credentails & region using .aws profile
 dotnet S3StreamUnzip.dll myinputbucket  sample.zip outputBucket demo_prefix
 ```
 ## Using the C# API
+> **_NOTE:_**  Currently AWS TransferUtility configuration is not exposed to caller,if needed it can be allowed to configure  via API.
+> Current [_TransferUtilityConfig_](https://docs.aws.amazon.com/sdkfornet1/latest/apidocs/html/T_Amazon_S3_Transfer_TransferUtilityConfig.htm) configuration ConcurrentServiceRequests is 10 & NumberOfUploadThreads is also 10 
 ```csharp
 // logger
 using var loggerFactory = LoggerFactory.Create(builder =>
 {
-    builder.AddFilter("S3StreamUnzip", LogLevel.Debug);
+    builder.AddFilter("S3StreamUnzip", LogLevel.Debug); // if you want to see less logs, set it to LogLevel.Information
     builder.ClearProviders();
     builder.AddConsole();
 });
