@@ -2,7 +2,7 @@
 This sample demonstrate the unzipping of zip file stored in S3 bucket without loading whole zip file in to client memory/disk 
 It uses CSharpziplib zipinputstream to extract the zip entry iteratively. 
 
-For **each zip entry** , if the **size > 50 MB ** and temorary file will be created else , it will be loaded in memory.
+For **each zip entry** , if the **size > 50 MB** and temorary file will be created else , it will be loaded in memory.
 It uses AWS TransferUtility to upload the extracted zip file on disk or in memory 
 
 > **_NOTE:_**  If process is running in a memory constrained envionment consider useing workstation gc configuration 
@@ -34,7 +34,9 @@ dotnet S3StreamUnzip.dll myinputbucket  sample.zip outputBucket demo_prefix
 ```
 ## Using the C# API
 > **_NOTE:_**  Currently AWS TransferUtility configuration is not exposed to caller,if needed it can be allowed to configure  via API.
-> Current [_TransferUtilityConfig_](https://docs.aws.amazon.com/sdkfornet1/latest/apidocs/html/T_Amazon_S3_Transfer_TransferUtilityConfig.htm) configuration ConcurrentServiceRequests is 10 & NumberOfUploadThreads is also 10 
+> Default configuration of  [_TransferUtilityConfig_](https://docs.aws.amazon.com/sdkfornet1/latest/apidocs/html/T_Amazon_S3_Transfer_TransferUtilityConfig.htm) are  
+>  **ConcurrentServiceRequests is 10**  
+>  **NumberOfUploadThreads is also 10** 
 ```csharp
 // logger
 using var loggerFactory = LoggerFactory.Create(builder =>
