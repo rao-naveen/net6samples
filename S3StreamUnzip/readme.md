@@ -1,9 +1,9 @@
 # Overview
-This sample demonstrate the unzipping of zip file stored in S3 bucket without loading whole zip file in to client memory/disk 
-It uses CSharpziplib zipinputstream to extract the zip entry iteratively. 
+This sample demonstrates unzipping of zip file stored in S3 bucket without loading whole zip file in to client memory/disk. 
+It uses CSharpziplib [zipinputstream](https://github.com/icsharpcode/SharpZipLib/blob/master/src/ICSharpCode.SharpZipLib/Zip/ZipInputStream.cs) to extract the zip entry iteratively. 
 
-For **each zip entry** , if the **size > 50 MB** and temorary file will be created else , it will be loaded in memory.
-It uses AWS TransferUtility to upload the extracted zip file on disk or in memory 
+For **each zip entry** found, if the **size > 50 MB** and temorary file will be created else , it will be loaded in memory.
+It uses AWS TransferUtility to upload the extracted zip file on disk or in memory. 
 
 > **_NOTE:_**  If process is running in a memory constrained envionment consider useing workstation gc configuration 
 > More details of [GC types](https://learn.microsoft.com/en-us/dotnet/standard/garbage-collection/workstation-server-gc) 
@@ -13,9 +13,9 @@ It uses AWS TransferUtility to upload the extracted zip file on disk or in memor
 1.	Maintain folder structure as in zip file.
 2.	Zipped output can be in a separate bucket.
 3.	Returns the list of object keys stored in the output bucket.
-4.	Asynchronous.
-5.	If processing of any zip entry fails whole operation is stopped.
-
+4.	Fully asynchronous.
+5.	Uses AWS S3 [TransferUtility](https://docs.aws.amazon.com/mobile/sdkforxamarin/developerguide/s3-integration-transferutility.html) to parallelize the uploads.
+6.	If processing of any zip entry fails whole operation is stops.
 
 
 ## Sample usage.
