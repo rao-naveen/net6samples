@@ -9,6 +9,8 @@ It uses AWS TransferUtility to upload the extracted zip file on disk or in memor
 > More details of [GC types](https://learn.microsoft.com/en-us/dotnet/standard/garbage-collection/workstation-server-gc) 
 > Configure [GC types](https://learn.microsoft.com/en-us/dotnet/core/runtime-config/garbage-collector#workstation-vs-server) 
 
+
+
 ## Features
 1.	Maintain folder structure as in zip file.
 2.	Zipped output can be in a separate bucket.
@@ -16,6 +18,9 @@ It uses AWS TransferUtility to upload the extracted zip file on disk or in memor
 4.	Fully asynchronous.
 5.	Uses AWS S3 [TransferUtility](https://docs.aws.amazon.com/mobile/sdkforxamarin/developerguide/s3-integration-transferutility.html) to parallelize the uploads.
 6.	If processing of any zip entry fails whole operation is stops.
+
+> **_NOTE:_**  
+Unzip may fail if you use Windows buitin Zip utility.Compress from Windows explorer creates **Deflate64** if **size > 2GB**  and  **Deflate64** is not supported by [SharpZipLib](https://github.com/icsharpcode/SharpZipLib/issues/23 ) because it not a standard compression type.
 
 
 ## Sample usage.
