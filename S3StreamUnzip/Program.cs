@@ -10,29 +10,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 
-//var fileStream = File.OpenRead(@"C:\dev\dicom-images\DICOM_Images_US_2Series.zip");
-//string destDirPath = @"C:\dev\temp\fors3-test";
-//using ZipInputStream zipInputStream = new ZipInputStream(fileStream);
-//ZipEntry theEntry;
-//while ((theEntry = zipInputStream.GetNextEntry()) != null)
-//{
-//    if (theEntry.IsDirectory)
-//    {
-//        var dirPath = Path.Combine(destDirPath ,theEntry.Name);
-//        Directory.CreateDirectory(dirPath);
-//        Console.WriteLine("It is a directory");
-//        continue;
-//    }
-//    Console.WriteLine(theEntry.Name);
-//    Console.WriteLine(theEntry.CompressedSize);
-//    var path = Path.Combine(destDirPath, theEntry.Name);
-//    using var outFile = File.OpenWrite(path);
-//    zipInputStream.CopyTo(outFile);
-//}
-
-//Console.WriteLine("");
-
-
 var memInfo = GC.GetGCMemoryInfo();
 var gcType = GCSettings.IsServerGC ? "Server GC" : "Workstation GC";
 Console.WriteLine($"GC type {gcType}");
