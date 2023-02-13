@@ -1,9 +1,37 @@
-﻿// See https://aka.ms/new-console-template for more information
+// See https://aka.ms/new-console-template for more information
 
 using Amazon.S3;
 using S3StreamUnzip;
 using System.Diagnostics;
 using System.Runtime;
+using Amazon.Runtime;
+using ICSharpCode.SharpZipLib.Zip;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+
+
+//var fileStream = File.OpenRead(@"C:\dev\dicom-images\DICOM_Images_US_2Series.zip");
+//string destDirPath = @"C:\dev\temp\fors3-test";
+//using ZipInputStream zipInputStream = new ZipInputStream(fileStream);
+//ZipEntry theEntry;
+//while ((theEntry = zipInputStream.GetNextEntry()) != null)
+//{
+//    if (theEntry.IsDirectory)
+//    {
+//        var dirPath = Path.Combine(destDirPath ,theEntry.Name);
+//        Directory.CreateDirectory(dirPath);
+//        Console.WriteLine("It is a directory");
+//        continue;
+//    }
+//    Console.WriteLine(theEntry.Name);
+//    Console.WriteLine(theEntry.CompressedSize);
+//    var path = Path.Combine(destDirPath, theEntry.Name);
+//    using var outFile = File.OpenWrite(path);
+//    zipInputStream.CopyTo(outFile);
+//}
+
+//Console.WriteLine("");
+
 
 var memInfo = GC.GetGCMemoryInfo();
 var gcType = GCSettings.IsServerGC ? "Server GC" : "Workstation GC";
@@ -12,30 +40,52 @@ Console.WriteLine($"TotalAvailableMemory - {Bytes.GetReadableSize(memInfo.TotalA
 
 if (args.Length < 4)
 {
-    Console.WriteLine($"Usage S3StreamUnzip <<inputbucket>> <<input_zip_object_key>> <<out_put_dir_prefix <<s3_service_url>>");
+    Console.WriteLine($"Usage S3StreamUnzip <<inputbucket>>  <<input_zip_object_key>> <<outputbucket>> <<out_put_dir_prefix>> [<<s3_service_url>>]");
+    return;
 }
 
 string acceskey = "minioadmin";
-string accessecret = "minioadmin";
+string secretKey = "minioadmin";
 
-string bucketName = args[0];
-string inputzip = args[1];
-string outputPrefix = args[2];
-string s3Url = args[3] ?? "http://192.168.1.11:9000";
+string inputBucketName = args[0];
+string inputZipObjectKey = args[1];
+string outputBucketName = args[2];
+string outputPrefix = args[3];
+string s3Url = string.Empty;
+if (args.Length > 4)
+{
+    s3Url = args[4];
+}
 
-AmazonS3Config config = new AmazonS3Config();
-config.ServiceURL = s3Url;
 
-AmazonS3Client s3Client = new AmazonS3Client(acceskey, accessecret, config);
-S3UnzipManager unzipManager = new S3UnzipManager(s3Client);
+var logger = Helper.GetLogger();
+
+IAmazonS3 s3Client;
+if (string.IsNullOrEmpty(s3Url))
+{
+    // create from .aws profile
+    s3Client = Helper.GetS3ClientUsingAwsProfile();
+}
+else
+{
+    // using minio
+    s3Client = Helper.GetS3ClientForMinio(s3Url, acceskey, secretKey);
+}
+
+
+S3UnzipManager unzipManager = new S3UnzipManager(s3Client, logger);
 try
 {
-    unzipManager.UnzipUsingCSharpziplib(bucketName, inputzip, outputPrefix);
+    var list = unzipManager.UnzipUsingCSharpziplib(inputBucketName, inputZipObjectKey, outputBucketName, string.Empty).GetAwaiter().GetResult();
+    foreach (var item in list)
+    {
+        Console.WriteLine(item);
+    }
 }
 catch (Exception exp)
 {
-    Console.WriteLine(exp.ToString() );
-	
+    Console.WriteLine(exp.ToString());
+
 }
 
 Console.WriteLine("Done");
