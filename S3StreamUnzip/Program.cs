@@ -24,14 +24,20 @@ if (args.Length < 4)
 string acceskey = "minioadmin";
 string secretKey = "minioadmin";
 
-string inputBucketName = args[0];
-string inputZipObjectKey = args[1];
-string outputBucketName = args[2];
-string outputPrefix = args[3];
+string mode = args[0];
+string inputBucketName = args[1];
+string inputZipObjectKey = args[2];
+string outputBucketName = args[3];
+string outputPrefix = args[4];
 string s3Url = string.Empty;
-if (args.Length > 4)
+if (args.Length > 5)
 {
-    s3Url = args[4];
+    s3Url = args[5];
+}
+string downloadDir = string.Empty;
+if (args.Length > 6)
+{
+    downloadDir = args[6];
 }
 
 
@@ -53,10 +59,22 @@ else
 S3UnzipManager unzipManager = new S3UnzipManager(s3Client, logger);
 try
 {
-    var list = unzipManager.UnzipUsingCSharpziplib(inputBucketName, inputZipObjectKey, outputBucketName, string.Empty).GetAwaiter().GetResult();
-    foreach (var item in list)
+    Stopwatch sw = Stopwatch.StartNew();
+    if (mode.ToLower() == "download")
     {
-        Console.WriteLine(item);
+        var list = unzipManager
+            .DirectoryUnzipUsingCSharpziplib(inputBucketName, inputZipObjectKey, outputBucketName, string.Empty, downloadDir)
+            .GetAwaiter().GetResult();
+        sw.Stop();
+        Console.WriteLine($"Download + zip + upload took {sw.ElapsedMilliseconds} ms");
+    }
+    else
+    {
+        var list = unzipManager
+            .StreamUnzipUsingCSharpziplib(inputBucketName, inputZipObjectKey, outputBucketName, string.Empty)
+            .GetAwaiter().GetResult();
+        sw.Stop();
+        Console.WriteLine($"Stream unzip took {sw.ElapsedMilliseconds} ms");
     }
 }
 catch (Exception exp)
